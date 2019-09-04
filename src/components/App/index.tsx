@@ -65,7 +65,6 @@ export default class App extends React.Component<IProps, IState> {
             </Button>,
         },
     ];
-    //fixme
     state = {
         data: [{
             key: 0,

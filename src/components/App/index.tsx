@@ -1,5 +1,5 @@
 import React from 'react';
-import {Button, Modal, Table, Input} from "antd";
+import { Button, Input, Modal, Table } from "antd";
 import './styles.css'
 import 'antd/dist/antd.css'
 
@@ -28,32 +28,54 @@ interface IState {
 
 export default class App extends React.Component<IProps, IState> {
 
-    handleDelete = (index: number) => {
-        const itemIndex = this.state.data.findIndex(({key}: IdataItem) => index === key);
-        if (itemIndex !== -1) {
-            this.state.data.splice(itemIndex, 1);
-            this.setState({data: this.state.data})
-        }
+    componentDidMount(): void {
+        this.getFromLocalStorage();
+    }
 
+    handleDelete = (index: number) => {
+        const itemIndex = this.state.data.findIndex((val, i) => index === i);
+        if (itemIndex !== -1) {
+            this.saveToLocalStorageAndState(
+                {
+                    ...this.state,
+                    data: this.state.data.filter((_, i) => i ! - itemIndex).map((v, key) => ({...v, key}))
+                })
+        }
     };
 
     showModal = () => this.setState({visible: true});
 
-    handleOk = () => {
-        this.setState({
+    handleAdd = () => {
+        this.saveToLocalStorageAndState({
             visible: false,
-            data: [...this.state.data, {...this.state.formData, key: this.state.data.length}],
+            data: [...this.state.data, this.state.formData].map((v, key) => ({...v, key})),
             formData: {title: '', description: ''}
         });
     };
 
+    saveToLocalStorageAndState = (data: IState) => {
+        this.setState(data);
+        localStorage.setItem('todolistStorage', JSON.stringify(data))
+    };
+
+    getFromLocalStorage = () => {
+        const storage = localStorage.getItem('todolistStorage');
+        let state = this.state;
+        if (storage) {
+            state = {...state, ...JSON.parse(storage)}
+        }
+        this.setState(state)
+    };
+
+
     handleCancel = () => this.setState({visible: false, formData: {title: '', description: ''}});
 
     columns = [
-        {title: 'title', dataIndex: 'title', key: 'title'},
+        {title: 'Title', dataIndex: 'title', key: 'title'},
         {
             title: 'Action',
             dataIndex: '',
+            width: 100,
             key: 'x',
             render: ({key}: IdataItem) => <Button
                 onClick={() => this.handleDelete(key)}
@@ -65,20 +87,8 @@ export default class App extends React.Component<IProps, IState> {
             </Button>,
         },
     ];
-    state = {
-        data: [{
-            key: 0,
-            title: "task 1",
-            description: 'My name is John Brown, I am 32 years old, living in New York No. 1 Lake Park.',
-        }, {
-            key: 1,
-            title: "task 2",
-            description: 'My name is Jim Green, I am 42 years old, living in London No. 1 Lake Park.',
-        }, {
-            key: 2,
-            title: "task 3",
-            description: 'My name is Joe Black, I am 32 years old, living in Sidney No. 1 Lake Park.',
-        }],
+    state: IState = {
+        data: [],
         visible: false,
         formData: {
             title: '',
@@ -97,11 +107,13 @@ export default class App extends React.Component<IProps, IState> {
                 columns={this.columns}
                 expandedRowRender={record => <p style={{margin: 0}}>{record.description}</p>}
                 dataSource={data}
+                pagination={{position: "top"}}
+                bordered
             />
             <Modal
                 title="Task form"
                 visible={visible}
-                onOk={this.handleOk}
+                onOk={this.handleAdd}
                 onCancel={this.handleCancel}
             >
                 <b>Input your task</b>
